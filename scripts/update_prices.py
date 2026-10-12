@@ -20,6 +20,7 @@ ETFS = [
 ]
 NM = {"RISE 휴머노이드", "TIGER AI반도체", "RISE AI밸류체인", "KODEX 머니마켓"}  # 연 1~4회 지급
 OUT = os.environ.get("PRICES_OUT", "prices.json")
+ETFS_JSON = os.environ.get("ETFS_JSON", "etfs.json")  # 보유 종목 입력용 전체 종목표 (code → name/short/role/nm/y)
 UAS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
@@ -59,12 +60,12 @@ def yahoo_close(code):
             except Exception as e: last = e
     raise RuntimeError(f"yahoo {code}: {last}")
 
-def funetf_yield(code, short):
+def funetf_yield(code, short, nm=None):
     d = json.loads(get(f"https://www.funetf.co.kr/api/public/product/view/divBasic?itemId={isin(code)}"))
     m = sorted((d.get("monthly") or []), key=lambda x: str(x["divDt"]))
     m = [x for x in m if x.get("divRt") is not None]
-    if not m: raise RuntimeError(f"funetf {code}: no monthly")
-    if short in NM:
+    if not m: return 0.0, None  # 분배 이력 없음 = 무분배
+    if (short in NM) if nm is None else nm:
         cutoff = (datetime.now(KST).date() - timedelta(days=365)).strftime("%Y%m%d")
         used = [x for x in m if str(x["divDt"]) >= cutoff]
         y = sum(float(x["divRt"]) for x in used)
@@ -92,15 +93,23 @@ def main():
             log("yield fail", short, e); pending.append(f"{short}:yield")
             if short in (prev.get("y") or {}): ys[short] = prev["y"][short]
         time.sleep(0.4)
+    # 전체 종목표의 분배율 (코드 기준) — 보유 종목 입력 기능용
+    yc = dict(prev.get("yc") or {})
+    try: allE = json.load(open(ETFS_JSON, encoding="utf-8"))
+    except Exception: allE = {}
+    for code, info in allE.items():
+        try: yc[code] = funetf_yield(code, info.get("short", ""), nm=bool(info.get("nm")))[0]
+        except Exception as e: log("yc fail", code, e); pending.append(f"{code}:yc")
+        time.sleep(0.3)
     asof = max(dates).isoformat() if dates else prev.get("asof")
     div_range = prev.get("divRange", "")
     if rng6:
         a, b = rng6; div_range = f"{a[:4]}.{int(a[4:6])}~{int(b[4:6])}월" if a[:4] == b[:4] else f"{a[:4]}.{int(a[4:6])}월~{b[:4]}.{int(b[4:6])}월"
-    out = {"asof": asof, "px": px, "y": ys, "divRange": div_range,
+    out = {"asof": asof, "px": px, "y": ys, "yc": yc, "divRange": div_range,
            "divAsof": datetime.now(KST).date().isoformat(),
            "source": f"야후파이낸스 종가 · FunETF 분배금 지급 현황 · {datetime.now(KST).strftime('%Y-%m-%d %H:%M')} KST 조회",
            "pending": pending}
-    changed = any(out[k] != prev.get(k) for k in ("asof", "px", "y", "divRange"))
+    changed = any(out[k] != prev.get(k) for k in ("asof", "px", "y", "yc", "divRange"))
     if changed:
         json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print(f"changed={'true' if changed else 'false'}")
