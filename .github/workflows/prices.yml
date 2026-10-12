@@ -1,0 +1,43 @@
+name: ver2 prices auto-update (전일 종가 · FunETF 분배율)
+
+# 평일 07:50 KST 전일 종가 + 보조 08:20 KST. GitHub cron 은 UTC 기준, 지연·누락 가능해 보조 실행을 둔다.
+# 값이 직전과 같으면 파일을 건드리지 않으므로 중복 실행은 안전하다.
+on:
+  schedule:
+    - cron: "50 22 * * 0-4"   # 07:50 KST Mon–Fri
+    - cron: "20 23 * * 0-4"   # 08:20 KST Mon–Fri (보조)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ver2-prices
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch prices and yields
+        id: upd
+        run: |
+          set -o pipefail
+          python3 scripts/update_prices.py | tee -a "$GITHUB_OUTPUT"
+      - name: Commit and push if changed
+        if: steps.upd.outputs.changed == 'true'
+        run: |
+          git config user.name "ver2-prices-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add prices.json
+          MSG="Update ver2 prices — ${{ steps.upd.outputs.date }} closing"
+          if [ "${{ steps.upd.outputs.pending }}" != "none" ]; then MSG="$MSG (pending: ${{ steps.upd.outputs.pending }})"; fi
+          git commit -m "$MSG"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Summary
+        run: |
+          echo "changed=${{ steps.upd.outputs.changed }} date=${{ steps.upd.outputs.date }} pending=${{ steps.upd.outputs.pending }}" >> "$GITHUB_STEP_SUMMARY"
+          cat prices.json >> "$GITHUB_STEP_SUMMARY"
