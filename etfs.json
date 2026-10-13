@@ -411,5 +411,68 @@
   "role": "C",
   "nm": false,
   "y": 3.0
+ },
+ "0080G0": {
+  "name": "KODEX 방산TOP10",
+  "short": "KODEX 방산TOP10",
+  "role": "B",
+  "nm": true,
+  "y": 0.1
+ },
+ "0117V0": {
+  "name": "TIGER 코리아AI전력기기TOP3플러스",
+  "short": "TIGER AI전력기기TOP3+",
+  "role": "B",
+  "nm": true,
+  "y": 0.7
+ },
+ "0118Z0": {
+  "name": "ACE 미국AI테크핵심산업액티브",
+  "short": "ACE AI테크핵심산업",
+  "role": "B",
+  "nm": true,
+  "y": 0.0
+ },
+ "0190C0": {
+  "name": "RISE 현대차고정피지컬AI",
+  "short": "RISE 현대차피지컬AI",
+  "role": "B",
+  "nm": true,
+  "y": 0.0
+ },
+ "442320": {
+  "name": "RISE 글로벌원자력",
+  "short": "RISE 글로벌원자력",
+  "role": "B",
+  "nm": true,
+  "y": 0.5
+ },
+ "459580": {
+  "name": "KODEX CD금리액티브(합성)",
+  "short": "KODEX CD금리",
+  "role": "D",
+  "nm": false,
+  "y": 2.9
+ },
+ "475050": {
+  "name": "ACE KPOP포커스",
+  "short": "ACE KPOP포커스",
+  "role": "B",
+  "nm": true,
+  "y": 0.6
+ },
+ "475720": {
+  "name": "RISE 200위클리커버드콜",
+  "short": "RISE 200위클리CC",
+  "role": "A",
+  "nm": false,
+  "y": 22.2
+ },
+ "476800": {
+  "name": "KODEX 한국부동산리츠인프라",
+  "short": "KODEX 부동산리츠인프라",
+  "role": "C",
+  "nm": false,
+  "y": 9.4
  }
 }
